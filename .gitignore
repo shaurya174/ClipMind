@@ -56,3 +56,9 @@ hee.py
 backend/test.py
 backend/test_embedding.py
 backend/test_security.py
+
+
+# Build artifacts and system files
+frontend/dist/
+.DS_Store
+*.log
