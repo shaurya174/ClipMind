@@ -1,0 +1,52 @@
+# ==========================
+# Backend
+# ==========================
+
+# Environment variables
+backend/.env
+
+# Python virtual environment
+backend/venv/
+
+# Python cache
+backend/**/__pycache__/
+
+# Generated application data
+backend/mindmaps/
+backend/outputs/
+backend/transcripts/
+backend/vector_store/
+
+# ==========================
+# Frontend
+# ==========================
+
+frontend/.env
+frontend/node_modules/
+
+
+# ==========================
+# Local backups
+# ==========================
+
+backend - Copy/
+backend-backup/
+backend1/
+
+frontend - Copy/
+frontend - Copy (2)/
+frontend-backup/
+frontend1/
+frontend2/
+frontend3/
+frontend4/
+frontend5/
+frontend6/
+frontend7/
+frontend8/
+frontend9/
+frontend9 - Copy/
+frontend10/
+frontend11/
+
+hee.py
