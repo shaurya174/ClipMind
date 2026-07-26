@@ -50,3 +50,9 @@ frontend10/
 frontend11/
 
 hee.py
+
+
+# Local development test scripts
+backend/test.py
+backend/test_embedding.py
+backend/test_security.py
