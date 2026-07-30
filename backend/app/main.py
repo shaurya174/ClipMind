@@ -1,21 +1,28 @@
+import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes.summarize import router as summarize_router
-from app.routes.status import router as status_router
-from app.routes.result import router as result_router
-from app.routes.chat import router as chat_router
-from app.routes.mindmap import router as mindmap_router
-from app.routes.transcript import router as transcript_router
 from app.auth.routes import router as auth_router
 from app.reviews.routes import router as reviews_router
+from app.routes.chat import router as chat_router
+from app.routes.mindmap import router as mindmap_router
+from app.routes.result import router as result_router
+from app.routes.status import router as status_router
+from app.routes.summarize import router as summarize_router
+from app.routes.transcript import router as transcript_router
+
+load_dotenv()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 app = FastAPI()
 
-# ---------------- CORS FIX ----------------
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite frontend
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,6 +41,8 @@ app.include_router(
     tags=["Authentication"],
 )
 app.include_router(reviews_router)
+
+
 @app.get("/")
 def root():
     return {"status": "ClipMind API running"}
