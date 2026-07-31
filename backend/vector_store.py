@@ -1,21 +1,12 @@
-import json
-import os
-
 import faiss
 import numpy as np
 
-
-VECTOR_DIR = "vector_store"
-
-os.makedirs(VECTOR_DIR, exist_ok=True)
-
-
-def _index_path(video_id: str) -> str:
-    return os.path.join(VECTOR_DIR, f"{video_id}.index")
-
-
-def _metadata_path(video_id: str) -> str:
-    return os.path.join(VECTOR_DIR, f"{video_id}_metadata.json")
+from storage import (
+    upload_binary,
+    download_binary,
+    upload_json,
+    download_json,
+)
 
 
 def create_index(
@@ -24,18 +15,7 @@ def create_index(
     video_id: str,
 ) -> None:
     """
-    Create and save a FAISS index for one video.
-
-    Parameters
-    ----------
-    embeddings:
-        numpy array of shape (N, embedding_dimension)
-
-    metadata:
-        List containing transcript chunk metadata.
-
-    video_id:
-        YouTube video id.
+    Create and upload a FAISS index for one video.
     """
 
     if len(embeddings) == 0:
@@ -47,45 +27,53 @@ def create_index(
 
     index.add(embeddings)
 
-    faiss.write_index(index, _index_path(video_id))
+    # Serialize FAISS index into memory
+    serialized_index = faiss.serialize_index(index)
 
-    with open(_metadata_path(video_id), "w", encoding="utf-8") as file:
-        json.dump(
-            metadata,
-            file,
-            indent=2,
-            ensure_ascii=False,
-        )
+    upload_binary(
+        bucket="vector_store",
+        path=f"{video_id}.index",
+        data=serialized_index,
+    )
+
+    upload_json(
+        bucket="vector_store",
+        path=f"{video_id}_metadata.json",
+        data=metadata,
+    )
 
 
 def load_index(video_id: str):
     """
-    Load FAISS index and metadata.
+    Load a FAISS index and its metadata from Supabase Storage.
 
-    Returns
-    -------
-    (index, metadata)
+    Returns:
+        (index, metadata)
 
     or
 
-    (None, None)
+        (None, None)
     """
 
-    index_file = _index_path(video_id)
-    metadata_file = _metadata_path(video_id)
+    try:
+        index_bytes = download_binary(
+            bucket="vector_store",
+            path=f"{video_id}.index",
+        )
 
-    if not os.path.exists(index_file):
+        metadata = download_json(
+            bucket="vector_store",
+            path=f"{video_id}_metadata.json",
+        )
+
+        index = faiss.deserialize_index(
+            np.frombuffer(index_bytes, dtype=np.uint8)
+        )
+
+        return index, metadata
+
+    except Exception:
         return None, None
-
-    if not os.path.exists(metadata_file):
-        return None, None
-
-    index = faiss.read_index(index_file)
-
-    with open(metadata_file, "r", encoding="utf-8") as file:
-        metadata = json.load(file)
-
-    return index, metadata
 
 
 def search_index(
@@ -123,10 +111,21 @@ def search_index(
 
 def index_exists(video_id: str) -> bool:
     """
-    Returns True if both the FAISS index and metadata exist.
+    Returns True if the vector store exists.
     """
 
-    return (
-        os.path.exists(_index_path(video_id))
-        and os.path.exists(_metadata_path(video_id))
-    )
+    try:
+        download_binary(
+            bucket="vector_store",
+            path=f"{video_id}.index",
+        )
+
+        download_json(
+            bucket="vector_store",
+            path=f"{video_id}_metadata.json",
+        )
+
+        return True
+
+    except Exception:
+        return False

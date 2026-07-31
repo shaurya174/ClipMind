@@ -1,7 +1,9 @@
 import os
-from faster_whisper import WhisperModel
-import json
 from datetime import datetime
+
+from faster_whisper import WhisperModel
+
+from storage import upload_json, download_json
 
 # Load model once (IMPORTANT: performance improvement)
 model = WhisperModel("base", device="cpu", compute_type="float32")
@@ -10,7 +12,7 @@ model = WhisperModel("base", device="cpu", compute_type="float32")
 def transcribe_audio(file_path: str) -> dict:
     """
     Transcribes audio into structured time-aware segments.
-    
+
     Returns:
         {
             "text": full transcript string,
@@ -40,11 +42,13 @@ def transcribe_audio(file_path: str) -> dict:
     for segment in segments:
         cleaned_text = segment.text.strip()
 
-        segment_list.append({
-            "start": round(segment.start, 2),
-            "end": round(segment.end, 2),
-            "text": cleaned_text
-        })
+        segment_list.append(
+            {
+                "start": round(segment.start, 2),
+                "end": round(segment.end, 2),
+                "text": cleaned_text,
+            }
+        )
 
         full_text_parts.append(cleaned_text)
 
@@ -53,64 +57,54 @@ def transcribe_audio(file_path: str) -> dict:
 
     return {
         "text": full_text,
-        "segments": segment_list
+        "segments": segment_list,
     }
+
 
 def save_transcript(
     transcript_data: dict,
     video_id: str,
     title: str,
     duration: str,
-    output_dir: str = "transcripts"
 ) -> str:
     """
-    Save transcript and video metadata using video_id as the single source of truth.
+    Save transcript and metadata to Supabase Storage.
 
-    Stored information:
-    - video_id
-    - title
-    - duration
-    - created_at
-    - transcript
+    Returns:
+        Object name stored in the transcripts bucket.
     """
 
-    os.makedirs(output_dir, exist_ok=True)
-
-    file_path = os.path.join(output_dir, f"{video_id}.json")
+    filename = f"{video_id}.json"
 
     payload = {
         "video_id": video_id,
         "title": title,
         "duration": duration,
         "created_at": datetime.now().isoformat(),
-        "transcript": transcript_data
+        "transcript": transcript_data,
     }
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+    upload_json(
+        bucket="transcripts",
+        path=filename,
+        data=payload,
+    )
 
-    return file_path
+    return filename
 
-def load_transcript(video_id: str, output_dir: str = "transcripts") -> dict | None:
+
+def load_transcript(video_id: str) -> dict | None:
     """
-    Load cached transcript and metadata.
+    Load cached transcript from Supabase Storage.
 
     Returns:
-        {
-            "video_id": ...,
-            "title": ...,
-            "duration": ...,
-            "created_at": ...,
-            "transcript": ...
-        }
-
-        or None if not found.
+        Transcript dictionary or None if it doesn't exist.
     """
 
-    file_path = os.path.join(output_dir, f"{video_id}.json")
-
-    if not os.path.exists(file_path):
+    try:
+        return download_json(
+            bucket="transcripts",
+            path=f"{video_id}.json",
+        )
+    except Exception:
         return None
-
-    with open(file_path, "r", encoding="utf-8") as f:
-        return json.load(f)

@@ -7,7 +7,7 @@ from database import get_db
 from app.auth.jwt import decode_token
 from app.auth.repository import get_user_by_id
 
-security = HTTPBearer(auto_error=True)
+security = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
@@ -17,6 +17,12 @@ def get_current_user(
     """
     Validate access token and return the authenticated user.
     """
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required.",
+        )
 
     token = credentials.credentials
 
@@ -47,3 +53,32 @@ def get_current_user(
         )
 
     return user
+
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+):
+    """
+    Return the authenticated user if a valid access token is provided.
+    Otherwise return None.
+    """
+
+    if credentials is None:
+        return None
+
+    token = credentials.credentials
+
+    try:
+        payload = decode_token(token)
+
+    except JWTError:
+        return None
+
+    if payload.get("type") != "access":
+        return None
+
+    return get_user_by_id(
+        db,
+        payload["sub"],
+    )

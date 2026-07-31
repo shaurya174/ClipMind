@@ -1,5 +1,10 @@
 import axios from "axios";
-import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "./tokenStore";
+import {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+} from "./tokenStore";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
@@ -39,7 +44,7 @@ function performTokenRefresh() {
     .post(
       "/auth/refresh",
       { refresh_token: refreshToken },
-      { _isRefreshCall: true } // marks this call so the response interceptor never retries *it*
+      { _isRefreshCall: true }, // marks this call so the response interceptor never retries *it*
     )
     .then((res) => {
       setTokens(res.data);
@@ -59,8 +64,11 @@ client.interceptors.response.use(
     const status = error.response?.status;
 
     const shouldAttemptRefresh =
-      status === 401 && originalRequest && !originalRequest._retry && !originalRequest._isRefreshCall;
-
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest._isRefreshCall &&
+      !originalRequest._skipRefresh;
     if (!shouldAttemptRefresh) {
       return Promise.reject(error);
     }
@@ -80,7 +88,7 @@ client.interceptors.response.use(
       window.dispatchEvent(new CustomEvent("clipmind:auth-expired"));
       return Promise.reject(refreshError);
     }
-  }
+  },
 );
 
 function unwrap(promise) {
@@ -132,10 +140,19 @@ export function getJobResult(jobId) {
  * @param {{video_id: string, question: string}} payload
  * @returns {Promise<{answer: string, used_transcript: boolean, related_topic: boolean, sources: Array<{start_time: string, end_time: string}>}>}
  */
-export function chatWithVideo({ video_id, question }) {
-  return unwrap(client.post("/chat", { video_id, question }, { timeout: 45000 }));
-}
 
+export function chatWithVideo({ video_id, question }) {
+  return unwrap(
+    client.post(
+      "/chat",
+      { video_id, question },
+      {
+        timeout: 45000,
+        _skipRefresh: true,
+      },
+    ),
+  );
+}
 /**
  * Fetch the AI-generated concept graph for a video.
  * @param {string} videoId

@@ -1,16 +1,4 @@
-import json
-import os
-
-MINDMAP_DIR = "mindmaps"
-
-os.makedirs(MINDMAP_DIR, exist_ok=True)
-
-
-def _mindmap_path(video_id: str) -> str:
-    """
-    Return the JSON path for a video's mind map.
-    """
-    return os.path.join(MINDMAP_DIR, f"{video_id}.json")
+from storage import download_json, upload_json
 
 
 def save_mindmap(
@@ -18,23 +6,21 @@ def save_mindmap(
     mindmap: dict,
 ) -> str:
     """
-    Save a generated mind map.
+    Save a generated mind map to Supabase Storage.
 
     Returns:
-        Path to the saved JSON file.
+        Object name stored in the mindmaps bucket.
     """
 
-    file_path = _mindmap_path(video_id)
+    filename = f"{video_id}.json"
 
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(
-            mindmap,
-            file,
-            indent=2,
-            ensure_ascii=False,
-        )
+    upload_json(
+        bucket="mindmaps",
+        path=filename,
+        data=mindmap,
+    )
 
-    return file_path
+    return filename
 
 
 def load_mindmap(video_id: str) -> dict | None:
@@ -45,13 +31,13 @@ def load_mindmap(video_id: str) -> dict | None:
         Mind map dictionary or None if it doesn't exist.
     """
 
-    file_path = _mindmap_path(video_id)
-
-    if not os.path.exists(file_path):
+    try:
+        return download_json(
+            bucket="mindmaps",
+            path=f"{video_id}.json",
+        )
+    except Exception:
         return None
-
-    with open(file_path, "r", encoding="utf-8") as file:
-        return json.load(file)
 
 
 def mindmap_exists(video_id: str) -> bool:
@@ -59,4 +45,11 @@ def mindmap_exists(video_id: str) -> bool:
     Returns True if a mind map already exists.
     """
 
-    return os.path.exists(_mindmap_path(video_id))
+    try:
+        download_json(
+            bucket="mindmaps",
+            path=f"{video_id}.json",
+        )
+        return True
+    except Exception:
+        return False

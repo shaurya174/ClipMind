@@ -1,7 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import { chatWithVideo } from "../services/api";
+import { getAccessToken } from "../services/tokenStore";
 
 let idCounter = 0;
+
 function nextId() {
   idCounter += 1;
   return idCounter;
@@ -18,12 +20,31 @@ export function useChat(videoId) {
       const trimmed = question.trim();
       if (!trimmed || inFlightRef.current) return;
 
+      // Guest users cannot use chat
+      const token = getAccessToken();
+
+      if (!token) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextId(),
+            role: "assistant",
+            text: "Please sign in to chat with this video.",
+          },
+        ]);
+        return;
+      }
+
       inFlightRef.current = true;
       setError(null);
       setIsThinking(true);
 
       try {
-        const res = await chatWithVideo({ video_id: videoId, question: trimmed });
+        const res = await chatWithVideo({
+          video_id: videoId,
+          question: trimmed,
+        });
+
         setMessages((prev) => [
           ...prev,
           {
@@ -37,9 +58,15 @@ export function useChat(videoId) {
         ]);
       } catch (err) {
         setError(err.message);
+
         setMessages((prev) => [
           ...prev,
-          { id: nextId(), role: "assistant", failed: true, failedQuestion: trimmed },
+          {
+            id: nextId(),
+            role: "assistant",
+            failed: true,
+            failedQuestion: trimmed,
+          },
         ]);
       } finally {
         setIsThinking(false);
@@ -52,8 +79,18 @@ export function useChat(videoId) {
   const sendMessage = useCallback(
     (question) => {
       const trimmed = question.trim();
+
       if (!trimmed || inFlightRef.current) return;
-      setMessages((prev) => [...prev, { id: nextId(), role: "user", text: trimmed }]);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId(),
+          role: "user",
+          text: trimmed,
+        },
+      ]);
+
       runQuestion(trimmed);
     },
     [runQuestion]
@@ -67,5 +104,11 @@ export function useChat(videoId) {
     [runQuestion]
   );
 
-  return { messages, isThinking, error, sendMessage, retryMessage };
+  return {
+    messages,
+    isThinking,
+    error,
+    sendMessage,
+    retryMessage,
+  };
 }

@@ -1,6 +1,6 @@
-import json
-import os
 from datetime import datetime
+
+from storage import upload_json
 
 
 def save_output(
@@ -8,32 +8,33 @@ def save_output(
     video_id: str,
     title: str,
     duration: str,
-    output_dir: str = "outputs"
 ) -> str:
     """
-    Save the generated summary to a timestamped JSON file.
+    Save the generated summary to Supabase Storage.
 
-    Filename format:
+    Object name format:
         <video_id>_<YYYYMMDD_HHMMSS>.json
-    """
 
-    os.makedirs(output_dir, exist_ok=True)
+    Returns:
+        The object name stored in the outputs bucket.
+    """
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     filename = f"{video_id}_{timestamp}.json"
-
-    file_path = os.path.join(output_dir, filename)
 
     payload = {
         "video_id": video_id,
         "title": title,
         "duration": duration,
         "generated_at": datetime.now().isoformat(),
-        "summary": summary
+        "summary": summary,
     }
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+    upload_json(
+        bucket="outputs",
+        path=filename,
+        data=payload,
+    )
 
-    return file_path
+    return filename
