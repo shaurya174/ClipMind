@@ -111,9 +111,9 @@ Keep track of previously processed videos and their results.
 
 <br><br>
 
-<h3>📊 Video Status</h3>
+<h3>📊 Video Result</h3>
 
-<img src="pictures/status.png" width="850">
+<img src="pictures/result.png" width="850">
 
 <br><br>
 
