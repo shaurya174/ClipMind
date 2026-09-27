@@ -107,37 +107,37 @@ Keep track of previously processed videos and their results.
 
 <h3>🏠 Home</h3>
 
-<img src="pictures/home.png" width="850">
+<img src="home.png" width="850">
 
 <br><br>
 
 <h3>📊 Video Result</h3>
 
-<img src="pictures/result.png" width="850">
+<img src="result.png" width="850">
 
 <br><br>
 
 <h3>⚙️ Transcribing & Summarizing</h3>
 
-<img src="pictures/mid-stage.png" width="850">
+<img src="mid-stage.png" width="850">
 
 <br><br>
 
 <h3>📑 Chunk Summaries</h3>
 
-<img src="pictures/chunk-summaries.png" width="850">
+<img src="chunk-summaries.png" width="850">
 
 <br><br>
 
 <h3>💬 AI Chat</h3>
 
-<img src="pictures/chat.png" width="850">
+<img src="chat.png" width="850">
 
 <br><br>
 
 <h3>🗺️ Mind Map</h3>
 
-<img src="pictures/mindmap.png" width="850">
+<img src="mindmap.png" width="850">
 
 </div>
 
